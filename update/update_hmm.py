@@ -59,7 +59,7 @@ numWarnings = 0
 def printWarning(msg):
     global numWarnings
     numWarnings += 1
-    print('WARNING: {}'.format(msg))
+    print(f'WARNING: {msg}')
 
 def updateFile(filename):
     global numFiles
@@ -90,7 +90,7 @@ def updateFile(filename):
 
                         if after == 'LinearCombineV4M4':
                             printLineWarning('HMM_LinearCombineSSE is now HMM_LinearCombineV4M4, and will now use a fallback method when SSE is not available. You no longer need to check for the availability of SSE.')
-                        if after == 'V' or after == 'M':
+                        if after in ['V', 'M']:
                             # uppercase the modifier, if any
                             name = re.sub(
                                 r'[VM]\d[ivfd]?',
@@ -100,12 +100,12 @@ def updateFile(filename):
                             # and also nuke the integer constructors
                             vecIntMatch = re.search(r'(V\d)I', name)
                             if vecIntMatch:
-                                name = name.replace(vecIntMatch.group(), vecIntMatch.group(1))
+                                name = name.replace(vecIntMatch.group(), vecIntMatch[1])
 
                     # add handedness / NDC modifiers
-                    if not any(x in name for x in ['RH', 'LH', 'NO', 'ZO']):
+                    if all(x not in name for x in ['RH', 'LH', 'NO', 'ZO']):
                         for handedFunc in handedFuncs:
-                            suffixed = handedFunc + '_RH'
+                            suffixed = f'{handedFunc}_RH'
                             if handedFunc in projectionFuncs:
                                 suffixed += '_NO'
                             name = name.replace(handedFunc, suffixed)
@@ -119,7 +119,7 @@ def updateFile(filename):
                     printLineWarning('{} now takes radians, but we were unable to automatically wrap the first argument with HMM_AngleDeg().'.format(name))
                     return m.group()
                 return '{}(HMM_AngleDeg({}),'.format(name, arg)
-                
+
             updatedLine = re.sub(r'(hmm_|HMM_)\w+', replaceName, updatedLine)
             updatedLine = re.sub(r'(?P<name>HMM_Perspective_RH_NO|HMM_Rotate_RH)\((?P<arg>.*?),', wrapDegrees, updatedLine)
 
@@ -156,11 +156,11 @@ for path in args.filename:
                     printWarning('HandmadeMath.h will not be replaced by this script.')
                 elif file.endswith(tuple(args.exts)):
                     filenames.append(os.path.join(root, file))
-    
+
     for filename in filenames:
         try:
             updateFile(filename)
         except UnicodeDecodeError:
             pass
 
-    print('Updated {} files with {} warnings.'.format(numFiles, numWarnings))
+    print(f'Updated {numFiles} files with {numWarnings} warnings.')
